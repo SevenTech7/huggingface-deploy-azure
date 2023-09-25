@@ -1,8 +1,8 @@
 name: Trigger auto deployment for demo-container
 
-#env:
-  #AZURE_CONTAINER_APP_NAME: demo-container
-  #AZURE_GROUP_NAME: demo-container
+env:
+  AZURE_CONTAINER_APP_NAME: demo-container
+  AZURE_GROUP_NAME: demo-container
 
 # When this action will be executed
 on:
@@ -28,9 +28,9 @@ jobs:
       - name: Log in to GitHub container registry
         uses: docker/login-action@v1.10.0
         with:
-          registry: demojhulenreserva.azurecr.io
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ secrets.actor }}
+          password: ${{ secrets.token }}
 
       - name: Lowercase the repo name and username
         run: echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
@@ -39,7 +39,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: demojhulenreserva.azurecr.io/${{ env.REPO }}:${{ github.sha }}
+          tags: ghcr.io/${{ env.REPO }}:${{ github.sha }}
           file: ./Dockerfile
 
   deploy:
@@ -61,6 +61,5 @@ jobs:
           inlineScript: |
             az config set extension.use_dynamic_install=yes_without_prompt
             az containerapp registry set -n ${{ env.AZURE_CONTAINER_APP_NAME }} -g ${{ env.AZURE_GROUP_NAME }} --server ghcr.io --username  ${{ github.actor }} --password ${{ secrets.PAT }}
-            az containerapp update -n demo-container -g demo-container --cpu 2 --memory 4Gi
             az containerapp update -n ${{ env.AZURE_CONTAINER_APP_NAME }} -g ${{ env.AZURE_GROUP_NAME }} --image ghcr.io/${{ env.REPO }}:${{ github.sha }}
 
